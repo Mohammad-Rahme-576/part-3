@@ -128,10 +128,6 @@ mongoose.connect(mongoUrl)
     console.log('error connecting to MongoDB:', error.message);
   });
 
-  app.get('/', (request, response) => {
-    response.send('<h1>Hello World!</h1>');
-  });
-
 app.use(express.static("dist"));
 app.use(cors());
 app.use(express.json());
@@ -200,7 +196,7 @@ app.use((request, response) => {
   response.status(404).send({ error: 'unknown endpoint' });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
