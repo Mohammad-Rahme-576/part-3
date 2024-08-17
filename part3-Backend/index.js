@@ -106,6 +106,7 @@ app.listen(PORT, () => {
 
 
 
+
 require('dotenv').config()
 const express = require("express")
 const morgan = require("morgan")
@@ -122,10 +123,12 @@ morgan.token("body", (req) => JSON.stringify(req.body))
 const morganFormat = ':method :url :status :res[content-length] - :response-time ms :body'
 app.use(morgan(morganFormat))
 
-app.get('/api/persons', (request, response) => {
-  Person.find({}).then(persons => {
-    response.json(persons)
-  })
+app.get('/api/persons', (request, response, next) => {
+  Person.find({})
+    .then(persons => {
+      response.json(persons)
+    })
+    .catch(error => next(error))
 })
 
 app.get('/info', (request, response, next) => {
@@ -145,15 +148,25 @@ app.get('/api/persons/:id', (request, response, next) => {
         response.status(404).end()
       }
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.error('Error in GET /api/persons/:id:', error.message)
+      response.status(400).send({ error: 'malformatted id' })
+    })
 })
 
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndRemove(request.params.id)
-    .then(() => {
-      response.status(204).end()
+    .then(result => {
+      if (result) {
+        response.status(204).end()
+      } else {
+        response.status(404).json({ error: 'person not found' })
+      }
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.error('Error in DELETE /api/persons/:id:', error.message)
+      next(error)
+    })
 })
 
 app.post('/api/persons', (request, response, next) => {
@@ -193,17 +206,19 @@ app.put('/api/persons/:id', (request, response, next) => {
         response.status(404).end()
       }
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.error('Error in PUT /api/persons/:id:', error.message)
+      next(error)
+    })
 })
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
 }
-
 app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message)
+  console.error('Error handler:', error.message)
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
@@ -211,9 +226,8 @@ const errorHandler = (error, request, response, next) => {
     return response.status(400).json({ error: error.message })
   }
 
-  next(error)
+  response.status(500).json({ error: 'An unexpected error occurred' })
 }
-
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
