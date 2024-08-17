@@ -107,17 +107,16 @@ app.listen(PORT, () => {
 
 
 
-require('dotenv').config();
-const express = require("express");
-const morgan = require("morgan");
-const cors = require("cors");
-const mongoose = require('mongoose'); 
-
+const express = require('express');
 const app = express();
+require('dotenv').config();
+const cors = require('cors');
+const morgan = require('morgan');
+const mongoose = require('mongoose'); 
 const Person = require('./models/person');
 
+// Connect to MongoDB
 const mongoUrl = process.env.MONGODB_URI; 
-
 console.log('connecting to', mongoUrl);
 
 mongoose.connect(mongoUrl)
@@ -128,13 +127,30 @@ mongoose.connect(mongoUrl)
     console.log('error connecting to MongoDB:', error.message);
   });
 
-app.use(express.static("dist"));
+// Middleware
+app.use(express.static('dist'));  // Serve static files from the "dist" directory
 app.use(cors());
 app.use(express.json());
 
-morgan.token("body", (req) => JSON.stringify(req.body));
+// Logging middleware
+morgan.token('body', (req) => JSON.stringify(req.body));
 const morganFormat = ':method :url :status :res[content-length] - :response-time ms :body';
 app.use(morgan(morganFormat));
+
+// Logger middleware
+const requestLogger = (request, response, next) => {
+  console.log('Method:', request.method);
+  console.log('Path:  ', request.path);
+  console.log('Body:  ', request.body);
+  console.log('---');
+  next();
+};
+app.use(requestLogger);
+
+// Routes
+app.get('/', (request, response) => {
+  response.send('<h1>Hello World!</h1>');
+});
 
 app.get('/api/persons', (request, response) => {
   Person.find({}).then(persons => {
@@ -149,25 +165,29 @@ app.get('/info', (request, response) => {
 });
 
 app.get('/api/persons/:id', (request, response) => {
-  Person.findById(request.params.id).then(person => {
-    if (person) {
-      response.json(person);
-    } else {
-      response.status(404).end();
-    }
-  }).catch(error => {
-    console.log(error);
-    response.status(400).send({ error: 'malformatted id' });
-  });
+  Person.findById(request.params.id)
+    .then(person => {
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch(error => {
+      console.log(error);
+      response.status(400).send({ error: 'malformatted id' });
+    });
 });
 
 app.delete('/api/persons/:id', (request, response) => {
-  Person.findByIdAndRemove(request.params.id).then(() => {
-    response.status(204).end();
-  }).catch(error => {
-    console.log(error);
-    response.status(400).send({ error: 'malformatted id' });
-  });
+  Person.findByIdAndRemove(request.params.id)
+    .then(() => {
+      response.status(204).end();
+    })
+    .catch(error => {
+      console.log(error);
+      response.status(400).send({ error: 'malformatted id' });
+    });
 });
 
 app.post('/api/persons', (request, response) => {
@@ -175,7 +195,7 @@ app.post('/api/persons', (request, response) => {
 
   if (!body.name || !body.number) {
     return response.status(400).json({
-      error: "name or number missing",
+      error: 'name or number missing',
     });
   }
 
@@ -184,19 +204,23 @@ app.post('/api/persons', (request, response) => {
     number: body.number,
   });
 
-  person.save().then(savedPerson => {
-    response.json(savedPerson);
-  }).catch(error => {
-    console.log(error);
-    response.status(400).send({ error: 'failed to save person' });
-  });
+  person.save()
+    .then(savedPerson => {
+      response.json(savedPerson);
+    })
+    .catch(error => {
+      console.log(error);
+      response.status(400).send({ error: 'failed to save person' });
+    });
 });
 
+// Handle unknown endpoints
 app.use((request, response) => {
   response.status(404).send({ error: 'unknown endpoint' });
 });
 
-const PORT = process.env.PORT;
+// Start the server
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
