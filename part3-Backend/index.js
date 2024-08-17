@@ -154,20 +154,20 @@ app.get('/api/persons/:id', (request, response, next) => {
     })
 })
 
-app.delete('/api/persons/:id', (request, response, next) => {
-  Person.findByIdAndRemove(request.params.id)
-    .then(result => {
-      if (result) {
-        response.status(204).end()
-      } else {
-        response.status(404).json({ error: 'person not found' })
-      }
-    })
-    .catch(error => {
-      console.error('Error in DELETE /api/persons/:id:', error.message)
-      next(error)
-    })
-})
+app.delete('/api/persons/:id', async (req, res) => {
+  try {
+    const personId = req.params.id;
+    const result = await Person.findByIdAndDelete(personId);
+    if (result) {
+      res.status(204).end(); 
+    } else {
+      res.status(404).json({ error: 'Person not found' });
+    }
+  } catch (error) {
+    console.error('Error handler:', error);
+    res.status(500).json({ error: 'An unexpected error occurred' });
+  }
+});
 
 app.post('/api/persons', (request, response, next) => {
   const body = request.body
