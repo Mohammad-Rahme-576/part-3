@@ -113,6 +113,7 @@ require('dotenv').config();
 const cors = require('cors');
 const morgan = require('morgan');
 const mongoose = require('mongoose'); 
+const path = require('path');
 const Person = require('./models/person');
 
 // Connect to MongoDB
@@ -148,10 +149,6 @@ const requestLogger = (request, response, next) => {
 app.use(requestLogger);
 
 // Routes
-app.get('/', (request, response) => {
-  response.send('<h1>Hello World!</h1>');
-});
-
 app.get('/api/persons', (request, response) => {
   Person.find({}).then(persons => {
     response.json(persons);
@@ -212,6 +209,11 @@ app.post('/api/persons', (request, response) => {
       console.log(error);
       response.status(400).send({ error: 'failed to save person' });
     });
+});
+
+// Serve the React app for any other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
 });
 
 // Handle unknown endpoints
