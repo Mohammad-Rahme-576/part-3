@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from "react";
 import personServices from "../services/persons";
+import './index.css';
 
-const Notification = ({ message , errorMessage }) => {
+const Notification = ({ message, errorMessage }) => {
   if (message === null && errorMessage === null) {
     return null;
-  }if(errorMessage){
-    return <div className="error">{errorMessage}</div>;
-  }if(message){
-    return <div className="success">{message}</div>;
   }
-}
+  return (
+    <div className={errorMessage ? "error" : "success"}>
+      {errorMessage || message}
+    </div>
+  );
+};
+
 
 const Filter = (props) => {
   return (
@@ -68,52 +71,56 @@ const App = () => {
 
 
   useEffect(() => {
-    personServices
-      .getAll()
+    personServices.getAll()
       .then((data) => {
-        setPersons(data);
+        setPersons(Array.isArray(data) ? data : []);
       })
       .catch((error) => {
         console.error("Error fetching persons:", error);
-
+        setPersons([]); 
       });
   }, []);
-
+  
   const addNameNumber = (event) => {
     event.preventDefault();
     const nameObject = {
       name: newName,
       number: newNumber,
     };
+  
     if (persons.find((person) => person.name === newName)) {
-      alert(`${newName} is already added to phonebook replace the old number with the new one?`);
+      alert(`${newName} is already added to phonebook. Replace the old number with the new one?`);
       const person = persons.find((person) => person.name === newName);
-      personServices
-        .update(person.id, nameObject)
+      personServices.update(person.id, nameObject)
         .then((response) => {
           setPersons(persons.map((person) => (person.id === response.id ? response : person)));
           setNewName("");
           setNewNumber("");
-          setMessage(`Added ${newName}`)
-    setTimeout(()=>{setMessage(null)},3000)
+          setMessage(`Updated ${newName}`);
+          setTimeout(() => setMessage(null), 3000);
         })
         .catch((error) => {
-          setErrorMessage(`Information of ${person.name} has already been removed from server`)
-          setTimeout(()=>{setErrorMessage(null)},3000)
+          setErrorMessage(error.response?.data?.error || `Error updating ${person.name}`);
+          setTimeout(() => setErrorMessage(null), 3000);
           console.error("Error updating person:", error);
         });
     } else {
-      personServices.create(nameObject).then((newPerson) => {
-        setPersons(persons.concat(newPerson));
-        setNewName("");
-        setNewNumber("");
-        setMessage(`Added ${newName}`)
-    setTimeout(()=>{setMessage(null)},3000)
-      })
+      personServices.create(nameObject)
+        .then((newPerson) => {
+          setPersons(persons.concat(newPerson));
+          setNewName("");
+          setNewNumber("");
+          setMessage(`Added ${newName}`);
+          setTimeout(() => setMessage(null), 3000);
+        })
+        .catch((error) => {
+          setErrorMessage(error.response?.data?.error || `Error adding ${newName}`);
+          setTimeout(() => setErrorMessage(null), 3000);
+          console.error("Error creating person:", error);
+        });
     }
-    
   };
-
+  
 
   const deletePerson = (id) => {
     const person = persons.find((person) => person.id === id);
@@ -149,7 +156,7 @@ const App = () => {
   );
 
   return (
-    <div>
+    <div  className="container">
       <h2>Phonebook</h2>
       <Notification message={message} errorMessage={errorMessage} />
       <Filter newSearch={newSearch} handleSearchChange={handleSearchChange} />
