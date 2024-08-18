@@ -102,24 +102,24 @@ app.listen(PORT, () => {
 });
 */
 
-//here i wil create new version of the code for part c exercises 3.13 and 3.14 so i donot delete the other exercises i solved for the last parts 
+//here i wil create new version of the code for part c exercises 3.13 and 3.14 so i donot delete the other exercises i solved for the last parts
 
 
 
 
 require('dotenv').config()
-const express = require("express")
-const morgan = require("morgan")
-const cors = require("cors")
+const express = require('express')
+const morgan = require('morgan')
+const cors = require('cors')
 const Person = require('./models/person')
 
 const app = express()
 
-app.use(express.static("dist"))
+app.use(express.static('dist'))
 app.use(cors())
 app.use(express.json())
 
-morgan.token("body", (req) => JSON.stringify(req.body))
+morgan.token('body', (req) => JSON.stringify(req.body))
 const morganFormat = ':method :url :status :res[content-length] - :response-time ms :body'
 app.use(morgan(morganFormat))
 
@@ -139,7 +139,7 @@ app.get('/info', (request, response, next) => {
     .catch(error => next(error))
 })
 
-app.get('/api/persons/:id', (request, response, next) => {
+app.get('/api/persons/:id', (request, response) => {
   Person.findById(request.params.id)
     .then(person => {
       if (person) {
@@ -156,25 +156,25 @@ app.get('/api/persons/:id', (request, response, next) => {
 
 app.delete('/api/persons/:id', async (req, res) => {
   try {
-    const personId = req.params.id;
-    const result = await Person.findByIdAndDelete(personId);
+    const personId = req.params.id
+    const result = await Person.findByIdAndDelete(personId)
     if (result) {
-      res.status(204).end(); 
+      res.status(204).end()
     } else {
-      res.status(404).json({ error: 'Person not found' });
+      res.status(404).json({ error: 'Person not found' })
     }
   } catch (error) {
-    console.error('Error handler:', error);
-    res.status(500).json({ error: 'An unexpected error occurred' });
+    console.error('Error handler:', error)
+    res.status(500).json({ error: 'An unexpected error occurred' })
   }
-});
+})
 
 app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
   if (!body.name || !body.number) {
     return response.status(400).json({
-      error: "name or number missing"
+      error: 'name or number missing'
     })
   }
 
@@ -191,25 +191,25 @@ app.post('/api/persons', (request, response, next) => {
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
-  const { name, number } = request.body;
+  const { name, number } = request.body
 
   Person.findByIdAndUpdate(
-    request.params.id, 
-    { name, number }, 
+    request.params.id,
+    { name, number },
     { new: true, runValidators: true, context: 'query' }
   )
-  .then(updatedPerson => {
-    if (updatedPerson) {
-      response.json(updatedPerson);
-    } else {
-      response.status(404).end();
-    }
-  })
-  .catch(error => {
-    console.error('Error in PUT /api/persons/:id:', error.message);
-    next(error);
-  });
-});
+    .then(updatedPerson => {
+      if (updatedPerson) {
+        response.json(updatedPerson)
+      } else {
+        response.status(404).end()
+      }
+    })
+    .catch(error => {
+      console.error('Error in PUT /api/persons/:id:', error.message)
+      next(error)
+    })
+})
 
 
 const unknownEndpoint = (request, response) => {
